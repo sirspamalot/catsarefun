@@ -50,17 +50,14 @@ def handle_url(url=REDDIT_URL):
     images = []
 
     for post in data:
-        if post["data"]["stickied"]:
+        ctx = post.get('data')
+        if ctx["stickied"]:
             continue
+        src = ctx['url'], ctx['domain'], ctx['title']
+        images.append(src)
 
-        url = post["data"]["url"]
-        source = post["data"]["domain"]
-        title = post["data"]["title"]
-
-        images.append((url, source, title))
-
-    img_url, img_source, img_title = random.choice(images)
-    return dl_content(img_url, img_source, img_title)
+    img = random.choice(images)
+    return dl_content(*img)
 
 
 def write_file(img_url, title):
