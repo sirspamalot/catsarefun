@@ -4,7 +4,6 @@ import glob
 import requests
 import random
 import os
-from io import open as iopen
 import sys
 
 SUBREDDITS = [
@@ -90,7 +89,7 @@ def write_file(img_url, title):
     # Print title for text msg
     print("Title: {}".format(title))
 
-    with iopen(fname, "wb") as file:
+    with open(fname, "wb") as file:
         file.write(r.content)
 
 
