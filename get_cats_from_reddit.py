@@ -26,21 +26,21 @@ GFYCAT = "https://api.gfycat.com/v1/gfycats/{}"
 headers = {"user-agent": "reddit-{}".format(os.environ.get("USER", "cse-20289-sp19"))}
 
 
-def dl_content(url, source, title):
+def dl_content(url, source):
     if source == "gfycat.com":
         gfy_url = url.split("/")[-1]
 
         r = requests.get(GFYCAT.format(gfy_url)).json()
         gfy_mp4url = r["gfyItem"]["mp4Url"]
 
-        return gfy_mp4url, title
+        return gfy_mp4url
 
     elif source == "i.imgur.com":
         img_url = url.replace(".gifv", ".mp4")
-        return img_url, title
+        return img_url
 
     else:
-        return url, title
+        return url
 
 
 def handle_url(url=REDDIT_URL):
@@ -58,7 +58,7 @@ def handle_url(url=REDDIT_URL):
         images.append(src)
 
     img = random.choice(images)
-    return dl_content(*img)
+    return dl_content(*img[:-1]), img[-1]
 
 
 def write_file(img_url, title):
