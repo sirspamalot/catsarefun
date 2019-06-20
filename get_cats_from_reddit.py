@@ -5,6 +5,7 @@ import requests
 import random
 import os
 import sys
+from urllib.parse import urlparse
 
 SUBREDDITS = [
     "cats",
@@ -65,22 +66,24 @@ def write_file(img_url, title):
         sys.stderr.write("Something went wrong - no url\n")
         return
 
-    if "v.redd.it" in img_url:
+    parse = urlparse(img_url)
+    if parse.netloc == 'v.redd.it':
         sys.stderr.write(
             "The source of this file is v.redd.it. Unfortunately, reddit recognizes requests to this source as being from a script and blocks them. Apologies.\n"
         )
         return
 
-    extension = ".jpg"
-    for ext in ("mp4", "png", "gif", "jpeg", "jpg"):
-        if ext in img_url:
-            extension = "." + ext
+    ext = parse.path.split('.', 1)[-1]
+    if not ext in ("mp4", "png", "gif", "jpeg", "jpg"):
+        print("can't handle url {}".format(img_url),
+              file=sys.stderr)
+        return
 
     # remove former cat file, necessary for applescript
     for cat_file in glob.glob("cat*"):
         os.unlink(cat_file)
 
-    fname = "cat" + extension
+    fname = "cat." + ext
     r = requests.get(img_url, stream=True)
 
     # Print title for text msg
