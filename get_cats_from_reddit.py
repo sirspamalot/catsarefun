@@ -26,7 +26,7 @@ GFYCAT = "https://api.gfycat.com/v1/gfycats/{}"
 headers = {"user-agent": "reddit-{}".format(os.environ.get("USER", "cse-20289-sp19"))}
 
 
-def dl_content(url, source):
+def dl_convert(url, source):
     if source == "gfycat.com":
         gfy_url = url.split("/")[-1]
 
@@ -58,7 +58,7 @@ def handle_url(url=REDDIT_URL):
         images.append(src)
 
     img = random.choice(images)
-    return dl_content(*img[:-1]), img[-1]
+    return dl_convert(*img[:-1]), img[-1]
 
 
 def write_file(img_url, title):
