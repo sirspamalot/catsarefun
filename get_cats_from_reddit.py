@@ -38,10 +38,18 @@ def dl_imgur(url):
     return img_url
 
 
+def dl_vreddit(url):
+    print('The source of this file is v.redd.it. Unfortunately, reddit'
+          ' recognizes requests to this source as being from a script and'
+          ' blocks them. Apologies.', file=sys.stderr)
+    sys.exit(127)
+
+
 def dl_convert(url, source):
     conv = {
         'gfycat.com'  : dl_gfycat,
         'i.imgur.com' : dl_imgur,
+        'v.redd.it' : dl_vreddit,
     }
     fkt = conv.get(source, lambda x: x)
     return fkt(url)
@@ -71,12 +79,6 @@ def write_file(img_url, title):
         return
 
     parse = urlparse(img_url)
-    if parse.netloc == 'v.redd.it':
-        sys.stderr.write(
-            "The source of this file is v.redd.it. Unfortunately, reddit recognizes requests to this source as being from a script and blocks them. Apologies.\n"
-        )
-        return
-
     ext = parse.path.split('.', 1)[-1]
     if not ext in ("mp4", "png", "gif", "jpeg", "jpg"):
         print("can't handle url {}".format(img_url),
