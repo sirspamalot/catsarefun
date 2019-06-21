@@ -73,7 +73,7 @@ def handle_url(url=REDDIT_URL):
     return dl_convert(*img[:-1]), img[-1]
 
 
-def write_file(img_url, title):
+def write_file(img_url):
     if not img_url:
         sys.stderr.write("Something went wrong - no url\n")
         return
@@ -91,17 +91,15 @@ def write_file(img_url, title):
 
     fname = "cat." + ext
     r = requests.get(img_url, stream=True)
-
-    # Print title for text msg
-    print("Title: {}".format(title))
-
     with open(fname, "wb") as file:
         file.write(r.content)
 
 
 def main():
     img, title = handle_url()
-    write_file(img, title)
+    write_file(img)
+    # Print title for text msg
+    print("Title: {}".format(title))
 
 
 if __name__ == "__main__":
