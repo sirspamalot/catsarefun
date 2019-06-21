@@ -99,5 +99,10 @@ def write_file(img_url, title):
         file.write(r.content)
 
 
-img, title = handle_url()
-write_file(img, title)
+def main():
+    img, title = handle_url()
+    write_file(img, title)
+
+
+if __name__ == "__main__":
+    main()
