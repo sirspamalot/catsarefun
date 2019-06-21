@@ -21,15 +21,14 @@ SUBREDDITS = [
 ]
 
 REDDIT_URL = "https://reddit.com/r/{}/.json?sort=top"
-GFYCAT = "https://api.gfycat.com/v1/gfycats/{}"
 
 headers = {"user-agent": "reddit-{}".format(os.environ.get("USER", "cse-20289-sp19"))}
 
 
 def dl_gfycat(url):
     gfy_url = url.split("/")[-1]
-
-    r = requests.get(GFYCAT.format(gfy_url)).json()
+    gfycat = "https://api.gfycat.com/v1/gfycats/{}".format(gfy_url)
+    r = requests.get(gfycat).json()
     gfy_mp4url = r["gfyItem"]["mp4Url"]
     return gfy_mp4url
 
