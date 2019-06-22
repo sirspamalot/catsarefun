@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import glob
 import requests
 import random
 import os
 import sys
+from contextlib import suppress
 from urllib.parse import urlparse
 
 SUBREDDITS = [
@@ -74,6 +74,7 @@ def handle_url(url=REDDIT_URL):
 
 
 def write_file(img_url):
+    link = 'lastpicture'
     if not img_url:
         sys.stderr.write("Something went wrong - no url\n")
         return
@@ -84,15 +85,18 @@ def write_file(img_url):
         print("can't handle url {}".format(img_url),
               file=sys.stderr)
         return
+    fname = "cat." + ext
 
     # remove former cat file, necessary for applescript
-    for cat_file in glob.glob("cat*"):
-        os.unlink(cat_file)
+    with suppress(FileNotFoundError):
+        lastpic = os.readlink(link)
+        os.unlink(lastpic)
+        os.unlink(link)
 
-    fname = "cat." + ext
-    r = requests.get(img_url, stream=True)
-    with open(fname, "wb") as file:
+    with open(fname, 'wb') as file:
+        r = requests.get(img_url, stream=True)
         file.write(r.content)
+    os.symlink(fname, link)
 
 
 def main():
