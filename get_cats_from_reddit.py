@@ -74,18 +74,26 @@ def handle_url(url=REDDIT_URL):
 
 
 def write_file(img_url):
-    link = 'lastpicture'
+
     if not img_url:
-        sys.stderr.write("Something went wrong - no url\n")
-        return
+        raise ValueError("Something went wrong - no url")
 
     parse = urlparse(img_url)
     ext = parse.path.split('.', 1)[-1]
     if not ext in ("mp4", "png", "gif", "jpeg", "jpg"):
-        print("can't handle url {}".format(img_url),
-              file=sys.stderr)
-        return
+        raise ValueError("can't handle url {}".format(img_url))
+
     fname = "cat." + ext
+    with open(fname, 'wb') as file:
+        r = requests.get(img_url, stream=True)
+        file.write(r.content)
+    return fname
+
+
+def main():
+
+    link = 'lastpicture'
+    img, title = handle_url()
 
     # remove former cat file, necessary for applescript
     with suppress(FileNotFoundError):
@@ -93,17 +101,14 @@ def write_file(img_url):
         os.unlink(lastpic)
         os.unlink(link)
 
-    with open(fname, 'wb') as file:
-        r = requests.get(img_url, stream=True)
-        file.write(r.content)
-    os.symlink(fname, link)
-
-
-def main():
-    img, title = handle_url()
-    write_file(img)
-    # Print title for text msg
-    print("Title: {}".format(title))
+    try:
+        out = write_file(img)
+        os.symlink(out, link)
+    except ValueError as err:
+        print(str(err), file=sys.stderr)
+    else:
+        # Print title for text msg
+        print("Title: {}".format(title))
 
 
 if __name__ == "__main__":
