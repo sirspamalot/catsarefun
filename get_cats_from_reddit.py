@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import glob
 import requests
 import random
 import os
-from io import open as iopen
 import sys
+from contextlib import suppress
+from urllib.parse import urlparse
 
 SUBREDDITS = [
     "cats",
@@ -21,26 +21,38 @@ SUBREDDITS = [
 ]
 
 REDDIT_URL = "https://reddit.com/r/{}/.json?sort=top"
-GFYCAT = "https://api.gfycat.com/v1/gfycats/{}"
 
 headers = {"user-agent": "reddit-{}".format(os.environ.get("USER", "cse-20289-sp19"))}
 
 
-def dl_content(url, source, title):
-    if source == "gfycat.com":
-        gfy_url = url.split("/")[-1]
+def dl_gfycat(url):
+    gfy_url = url.split("/")[-1]
+    gfycat = "https://api.gfycat.com/v1/gfycats/{}".format(gfy_url)
+    r = requests.get(gfycat).json()
+    gfy_mp4url = r["gfyItem"]["mp4Url"]
+    return gfy_mp4url
 
-        r = requests.get(GFYCAT.format(gfy_url)).json()
-        gfy_mp4url = r["gfyItem"]["mp4Url"]
 
-        return gfy_mp4url, title
+def dl_imgur(url):
+    img_url = url.replace(".gifv", ".mp4")
+    return img_url
 
-    elif source == "i.imgur.com":
-        img_url = url.replace(".gifv", ".mp4")
-        return img_url, title
 
-    else:
-        return url, title
+def dl_vreddit(url):
+    print('The source of this file is v.redd.it. Unfortunately, reddit'
+          ' recognizes requests to this source as being from a script and'
+          ' blocks them. Apologies.', file=sys.stderr)
+    sys.exit(127)
+
+
+def dl_convert(url, source):
+    conv = {
+        'gfycat.com'  : dl_gfycat,
+        'i.imgur.com' : dl_imgur,
+        'v.redd.it' : dl_vreddit,
+    }
+    fkt = conv.get(source, lambda x: x)
+    return fkt(url)
 
 
 def handle_url(url=REDDIT_URL):
@@ -51,48 +63,53 @@ def handle_url(url=REDDIT_URL):
     images = []
 
     for post in data:
-        if post["data"]["stickied"]:
+        ctx = post.get('data')
+        if ctx["stickied"]:
             continue
+        src = ctx['url'], ctx['domain'], ctx['title']
+        images.append(src)
 
-        url = post["data"]["url"]
-        source = post["data"]["domain"]
-        title = post["data"]["title"]
-
-        images.append((url, source, title))
-
-    img_url, img_source, img_title = random.choice(images)
-    return dl_content(img_url, img_source, img_title)
+    img = random.choice(images)
+    return dl_convert(*img[:-1]), img[-1]
 
 
-def write_file(img_url, title):
+def write_file(img_url):
+
     if not img_url:
-        sys.stderr.write("Something went wrong - no url\n")
-        return
+        raise ValueError("Something went wrong - no url")
 
-    if "v.redd.it" in img_url:
-        sys.stderr.write(
-            "The source of this file is v.redd.it. Unfortunately, reddit recognizes requests to this source as being from a script and blocks them. Apologies.\n"
-        )
-        return
+    parse = urlparse(img_url)
+    ext = parse.path.split('.', 1)[-1]
+    if not ext in ("mp4", "png", "gif", "jpeg", "jpg"):
+        raise ValueError("can't handle url {}".format(img_url))
 
-    extension = ".jpg"
-    for ext in ("mp4", "png", "gif", "jpeg", "jpg"):
-        if ext in img_url:
-            extension = "." + ext
+    fname = "cat." + ext
+    with open(fname, 'wb') as file:
+        r = requests.get(img_url, stream=True)
+        file.write(r.content)
+    return fname
+
+
+def main():
+
+    link = 'lastpicture'
+    img, title = handle_url()
 
     # remove former cat file, necessary for applescript
-    for cat_file in glob.glob("cat*"):
-        os.unlink(cat_file)
+    with suppress(FileNotFoundError):
+        lastpic = os.readlink(link)
+        os.unlink(lastpic)
+        os.unlink(link)
 
-    fname = "cat" + extension
-    r = requests.get(img_url, stream=True)
+    try:
+        out = write_file(img)
+        os.symlink(out, link)
+    except ValueError as err:
+        print(str(err), file=sys.stderr)
+    else:
+        # Print title for text msg
+        print("Title: {}".format(title))
 
-    # Print title for text msg
-    print("Title: {}".format(title))
 
-    with iopen(fname, "wb") as file:
-        file.write(r.content)
-
-
-img, title = handle_url()
-write_file(img, title)
+if __name__ == "__main__":
+    main()
